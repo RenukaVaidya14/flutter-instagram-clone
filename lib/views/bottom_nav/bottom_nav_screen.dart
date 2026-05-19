@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../home/home_screen.dart';
+import '../feed/feed_screen.dart';
 import '../profile/profile_screen.dart';
-import '../reels/reels_screen.dart';
-import '../search/search_screen.dart';
 import '../upload/upload_screen.dart';
 
-class BottomNavScreen extends StatefulWidget {
-  const BottomNavScreen({super.key});
+class BottomNavScreen
+    extends StatefulWidget {
+
+  const BottomNavScreen({
+    super.key,
+  });
 
   @override
   State<BottomNavScreen> createState() =>
@@ -19,15 +21,11 @@ class _BottomNavScreenState
 
   int currentIndex = 0;
 
-  final List<Widget> screens = [
+  final List screens = [
 
-    const HomeScreen(),
-
-    const SearchScreen(),
+    const FeedScreen(),
 
     const UploadScreen(),
-
-    const ReelsScreen(),
 
     const ProfileScreen(),
   ];
@@ -37,26 +35,15 @@ class _BottomNavScreenState
 
     return Scaffold(
 
-      backgroundColor: Colors.black,
-
-      body: IndexedStack(
-        index: currentIndex,
-        children: screens,
-      ),
+      body: screens[currentIndex],
 
       bottomNavigationBar:
       BottomNavigationBar(
 
         currentIndex: currentIndex,
 
-        onTap: (index) {
-
-          setState(() {
-            currentIndex = index;
-          });
-        },
-
-        backgroundColor: Colors.black,
+        backgroundColor:
+        Colors.black,
 
         selectedItemColor:
         Colors.white,
@@ -64,34 +51,35 @@ class _BottomNavScreenState
         unselectedItemColor:
         Colors.grey,
 
-        type:
-        BottomNavigationBarType.fixed,
+        onTap: (index) {
+
+          setState(() {
+
+            currentIndex = index;
+          });
+        },
 
         items: const [
 
           BottomNavigationBarItem(
+
             icon: Icon(Icons.home),
-            label: '',
+
+            label: "Home",
           ),
 
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: '',
-          ),
 
-          BottomNavigationBarItem(
             icon: Icon(Icons.add_box_outlined),
-            label: '',
+
+            label: "Upload",
           ),
 
           BottomNavigationBarItem(
-            icon: Icon(Icons.video_collection),
-            label: '',
-          ),
 
-          BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
+
+            label: "Profile",
           ),
         ],
       ),

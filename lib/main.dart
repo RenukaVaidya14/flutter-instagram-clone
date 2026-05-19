@@ -1,5 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_clone/views/bottom_nav/bottom_nav_screen.dart';
+import 'package:instagram_clone/views/feed/feed_screen.dart';
 
 import 'views/splash/splash_screen.dart';
 
@@ -24,7 +26,9 @@ class MyApp extends StatelessWidget {
 
       title: 'Instagram Clone',
 
-      home: const SplashScreen(),
+     // home: const SplashScreen(),
+
+      home: const BottomNavScreen(),
     );
   }
 }
