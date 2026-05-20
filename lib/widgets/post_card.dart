@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../services/post_service.dart';
 
 class PostCard extends StatelessWidget {
 
@@ -13,6 +16,23 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    /// CURRENT USER ID
+    final String currentUserId =
+
+        FirebaseAuth.instance
+            .currentUser!
+            .uid;
+
+    /// POST SERVICE
+    final PostService postService =
+    PostService();
+
+    /// CHECK LIKE STATUS
+    bool isLiked =
+
+    (post['likes'] ?? [])
+        .contains(currentUserId);
 
     return Column(
 
@@ -142,17 +162,46 @@ class PostCard extends StatelessWidget {
 
             children: [
 
+              /// LIKE BUTTON
               IconButton(
 
-                onPressed: () {},
+                onPressed: () {
 
-                icon: const Icon(
-                  Icons.favorite_border,
-                  color: Colors.white,
+                  postService.likePost(
+
+                    postId:
+                    post['postId'],
+
+                    userId:
+                    currentUserId,
+
+                    likes:
+                    post['likes']
+                        ?? [],
+                  );
+                },
+
+                icon: Icon(
+
+                  isLiked
+
+                      ? Icons.favorite
+
+                      : Icons.favorite_border,
+
+                  color:
+
+                  isLiked
+
+                      ? Colors.red
+
+                      : Colors.white,
+
                   size: 28,
                 ),
               ),
 
+              /// COMMENT BUTTON
               IconButton(
 
                 onPressed: () {},
@@ -164,6 +213,7 @@ class PostCard extends StatelessWidget {
                 ),
               ),
 
+              /// SHARE BUTTON
               IconButton(
 
                 onPressed: () {},
@@ -177,6 +227,7 @@ class PostCard extends StatelessWidget {
 
               const Spacer(),
 
+              /// SAVE BUTTON
               IconButton(
 
                 onPressed: () {},
@@ -191,7 +242,7 @@ class PostCard extends StatelessWidget {
           ),
         ),
 
-        /// LIKES
+        /// LIKES COUNT
         Padding(
           padding:
           const EdgeInsets.symmetric(
