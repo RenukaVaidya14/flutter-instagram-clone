@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../feed/feed_screen.dart';
 import '../profile/profile_screen.dart';
+import '../reels/reels_screen.dart';
 import '../upload/upload_screen.dart';
 
 class BottomNavScreen
@@ -25,6 +26,8 @@ class _BottomNavScreenState
 
     const FeedScreen(),
 
+    const ReelsScreen(),
+
     const UploadScreen(),
 
     const ProfileScreen(),
@@ -44,6 +47,9 @@ class _BottomNavScreenState
 
         backgroundColor:
         Colors.black,
+
+        type:
+        BottomNavigationBarType.fixed,
 
         selectedItemColor:
         Colors.white,
@@ -66,6 +72,13 @@ class _BottomNavScreenState
             icon: Icon(Icons.home),
 
             label: "Home",
+          ),
+
+          BottomNavigationBarItem(
+
+            icon: Icon(Icons.video_collection),
+
+            label: "Reels",
           ),
 
           BottomNavigationBarItem(

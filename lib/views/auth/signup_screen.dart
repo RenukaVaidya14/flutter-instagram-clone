@@ -92,6 +92,7 @@ class _SignupScreenState
 
 
       /// SAVE USER DATA IN FIRESTORE
+      /// SAVE USER DATA IN FIRESTORE
       await FirebaseFirestore.instance
           .collection("users")
           .doc(userCredential.user!.uid)
@@ -109,6 +110,12 @@ class _SignupScreenState
         "bio": "",
 
         "profileImage": "",
+
+        "followers": [],
+
+        "following": [],
+
+        "posts": 0,
       });
       ScaffoldMessenger.of(context)
           .showSnackBar(

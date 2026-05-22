@@ -1,10 +1,19 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../services/profile_service.dart';
+import '../auth/login_screen.dart';
+import 'profile_posts_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+
+  const ProfileScreen({
+    super.key,
+  });
 
   @override
   State<ProfileScreen> createState() =>
@@ -16,35 +25,102 @@ class _ProfileScreenState
 
   File? profileImage;
 
+  final currentUser =
+
+      FirebaseAuth.instance
+          .currentUser;
+
   /// PICK IMAGE
   Future<void> pickImage() async {
 
-    final pickedImage =
-    await ImagePicker().pickImage(
+    try {
 
-      source: ImageSource.gallery,
-    );
+      final pickedImage =
 
-    if (pickedImage != null) {
+      await ImagePicker()
+          .pickImage(
 
+        source: ImageSource.gallery,
+      );
+
+      if (pickedImage == null) return;
+
+      File imageFile =
+      File(pickedImage.path);
+
+      /// LOCAL UI UPDATE
       setState(() {
 
         profileImage =
-            File(pickedImage.path);
+            imageFile;
       });
+
+      print(
+        "IMAGE PICKED",
+      );
+
+      /// UPLOAD CLOUDINARY
+      String? imageUrl =
+
+      await ProfileService()
+          .uploadProfileImage(
+
+        imageFile: imageFile,
+      );
+
+      print(
+        "IMAGE URL: $imageUrl",
+      );
+
+      /// SAVE FIRESTORE
+      if (imageUrl != null &&
+          imageUrl.isNotEmpty) {
+
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(currentUser!.uid)
+            .set({
+
+          "profileImage":
+          imageUrl,
+
+        }, SetOptions(
+          merge: true,
+        ));
+
+        print(
+          "PROFILE IMAGE SAVED",
+        );
+
+        setState(() {});
+      }
+
+    } catch (e) {
+
+      print(
+        "PROFILE IMAGE ERROR: $e",
+      );
     }
   }
 
-  /// DELETE IMAGE
-  void deleteImage() {
+  /// REMOVE IMAGE
+  Future<void> deleteImage() async {
 
     setState(() {
 
       profileImage = null;
     });
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .update({
+
+      "profileImage": "",
+    });
   }
 
-  /// SHOW OPTIONS
+  /// MENU OPTIONS
   void showProfileOptions() {
 
     showModalBottomSheet(
@@ -61,78 +137,43 @@ class _ProfileScreenState
           child: Wrap(
             children: [
 
-              /// CHANGE PHOTO
+              /// LOGOUT
               ListTile(
 
                 leading: const Icon(
-                  Icons.photo,
-
-                  color: Colors.white,
+                  Icons.logout,
+                  color: Colors.red,
                 ),
 
                 title: const Text(
-                  "Change Profile Photo",
+
+                  "Logout",
 
                   style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
-
-                onTap: () {
-
-                  Navigator.pop(context);
-
-                  pickImage();
-                },
-              ),
-
-              /// REMOVE PHOTO
-              if (profileImage != null)
-
-                ListTile(
-
-                  leading: const Icon(
-                    Icons.delete,
-
                     color: Colors.red,
                   ),
-
-                  title: const Text(
-                    "Remove Photo",
-
-                    style: TextStyle(
-                      color: Colors.red,
-                    ),
-                  ),
-
-                  onTap: () {
-
-                    Navigator.pop(context);
-
-                    deleteImage();
-                  },
                 ),
 
-              /// CANCEL
-              ListTile(
-
-                leading: const Icon(
-                  Icons.close,
-
-                  color: Colors.white,
-                ),
-
-                title: const Text(
-                  "Cancel",
-
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
-
-                onTap: () {
+                onTap: () async {
 
                   Navigator.pop(context);
+
+                  await FirebaseAuth.instance
+                      .signOut();
+
+                  Navigator.pushAndRemoveUntil(
+
+                    context,
+
+                    MaterialPageRoute(
+
+                      builder: (context) =>
+
+                      const LoginScreen(),
+                    ),
+
+                        (route) => false,
+                  );
                 },
               ),
             ],
@@ -145,281 +186,518 @@ class _ProfileScreenState
   @override
   Widget build(BuildContext context) {
 
-    return Scaffold(
+    return StreamBuilder(
 
-      backgroundColor: Colors.black,
+      stream: FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUser!.uid)
+          .snapshots(),
 
-      appBar: AppBar(
+      builder: (context, userSnapshot) {
 
-        backgroundColor: Colors.black,
+        if (!userSnapshot.hasData) {
 
-        elevation: 0,
+          return const Scaffold(
 
-        title: const Text(
-          "renu",
+            backgroundColor:
+            Colors.black,
 
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+            body: Center(
 
-        actions: [
-
-          IconButton(
-            onPressed: () {},
-
-            icon: const Icon(
-              Icons.menu,
-              color: Colors.white,
+              child:
+              CircularProgressIndicator(),
             ),
-          ),
-        ],
-      ),
+          );
+        }
 
-      body: SingleChildScrollView(
+        /// FIRESTORE USER DATA
+        Map<String, dynamic> userData =
 
-        child: Padding(
-          padding: const EdgeInsets.all(15),
+            userSnapshot.data?.data()
 
-          child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            as Map<String, dynamic>? ??
 
-            children: [
+                {};
 
-              /// TOP PROFILE SECTION
-              Row(
-                children: [
+        return Scaffold(
 
-                  /// PROFILE IMAGE
-                  GestureDetector(
+          backgroundColor: Colors.black,
 
-                    onLongPress:
-                    showProfileOptions,
+          appBar: AppBar(
 
-                    child: CircleAvatar(
+            backgroundColor:
+            Colors.black,
 
-                      radius: 45,
+            elevation: 0,
 
-                      backgroundColor:
-                      Colors.grey.shade800,
+            title: Text(
 
-                      backgroundImage:
-                      profileImage != null
+              userData['username']
+                  ?? 'User',
 
-                          ? FileImage(
-                        profileImage!,
-                      )
+              style: const TextStyle(
 
-                          : null,
+                color: Colors.white,
 
-                      child:
-                      profileImage == null
-
-                          ? const Icon(
-                        Icons.person,
-
-                        size: 45,
-
-                        color:
-                        Colors.white,
-                      )
-
-                          : null,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  /// POSTS
-                  const Column(
-                    children: [
-
-                      Text(
-                        "0",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(height: 5),
-
-                      Text(
-                        "Posts",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(width: 25),
-
-                  /// FOLLOWERS
-                  const Column(
-                    children: [
-
-                      Text(
-                        "0",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(height: 5),
-
-                      Text(
-                        "Followers",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(width: 25),
-
-                  /// FOLLOWING
-                  const Column(
-                    children: [
-
-                      Text(
-                        "0",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(height: 5),
-
-                      Text(
-                        "Following",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                fontWeight:
+                FontWeight.bold,
               ),
+            ),
 
-              const SizedBox(height: 20),
+            actions: [
 
-              /// USERNAME
-              const Text(
-                "renu",
+              IconButton(
 
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight:
-                  FontWeight.bold,
-                ),
-              ),
+                onPressed:
+                showProfileOptions,
 
-              const SizedBox(height: 5),
-
-              /// BIO
-              const Text(
-                "Flutter Developer 🚀",
-
-                style: TextStyle(
+                icon: const Icon(
+                  Icons.menu,
                   color: Colors.white,
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// EDIT PROFILE BUTTON
-              SizedBox(
-                width: double.infinity,
-
-                child: OutlinedButton(
-
-                  style:
-                  OutlinedButton.styleFrom(
-
-                    side: BorderSide(
-                      color:
-                      Colors.grey.shade700,
-                    ),
-                  ),
-
-                  onPressed: () {},
-
-                  child: const Text(
-                    "Edit Profile",
-
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              /// DIVIDER
-              Divider(
-                color: Colors.grey.shade800,
-              ),
-
-              const SizedBox(height: 15),
-
-              /// POSTS GRID PLACEHOLDER
-              GridView.builder(
-
-                shrinkWrap: true,
-
-                physics:
-                const NeverScrollableScrollPhysics(),
-
-                itemCount: 9,
-
-                gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-
-                  crossAxisCount: 3,
-
-                  crossAxisSpacing: 5,
-
-                  mainAxisSpacing: 5,
-                ),
-
-                itemBuilder: (context, index) {
-
-                  return Container(
-
-                    color: Colors.grey.shade900,
-
-                    child: const Icon(
-                      Icons.image,
-
-                      color: Colors.white54,
-                    ),
-                  );
-                },
               ),
             ],
           ),
-        ),
-      ),
+
+          body: StreamBuilder(
+
+            stream: FirebaseFirestore.instance
+                .collection("posts")
+                .where(
+              "uid",
+              isEqualTo:
+              currentUser!.uid,
+            )
+                .snapshots(),
+
+            builder: (context, postSnapshot) {
+
+              if (!postSnapshot.hasData) {
+
+                return const Center(
+
+                  child:
+                  CircularProgressIndicator(),
+                );
+              }
+
+              var posts =
+                  postSnapshot.data!.docs;
+
+              return SingleChildScrollView(
+
+                child: Padding(
+                  padding:
+                  const EdgeInsets.all(
+                      15),
+
+                  child: Column(
+
+                    crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
+
+                    children: [
+
+                      /// TOP PROFILE SECTION
+                      Row(
+
+                        children: [
+
+                          /// PROFILE IMAGE
+                          GestureDetector(
+
+                            onLongPress: pickImage,
+
+                            child:
+                            CircleAvatar(
+
+                              radius: 45,
+
+                              backgroundColor:
+                              Colors.grey
+                                  .shade800,
+
+                              backgroundImage:
+
+                              userData[
+                              'profileImage'] !=
+                                  null &&
+                                  userData[
+                                  'profileImage'] !=
+                                      ""
+
+                                  ? NetworkImage(
+                                userData[
+                                'profileImage'],
+                              )
+
+                                  : null,
+
+                              child:
+
+                              userData[
+                              'profileImage'] ==
+                                  null ||
+                                  userData[
+                                  'profileImage'] ==
+                                      ""
+
+                                  ? const Icon(
+                                Icons.person,
+
+                                size: 45,
+
+                                color:
+                                Colors
+                                    .white,
+                              )
+
+                                  : null,
+                            ),
+                          ),
+
+                          const Spacer(),
+
+                          /// POSTS
+                          Column(
+
+                            children: [
+
+                              Text(
+
+                                posts.length
+                                    .toString(),
+
+                                style:
+                                const TextStyle(
+
+                                  color:
+                                  Colors.white,
+
+                                  fontSize: 20,
+
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                  height: 5),
+
+                              const Text(
+
+                                "Posts",
+
+                                style:
+                                TextStyle(
+                                  color:
+                                  Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(
+                              width: 25),
+
+                          /// FOLLOWERS
+                          Column(
+
+                            children: [
+
+                              Text(
+
+                                "${(userData['followers'] ?? []).length}",
+
+                                style:
+                                const TextStyle(
+
+                                  color:
+                                  Colors.white,
+
+                                  fontSize: 20,
+
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                  height: 5),
+
+                              const Text(
+
+                                "Followers",
+
+                                style:
+                                TextStyle(
+                                  color:
+                                  Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(
+                              width: 25),
+
+                          /// FOLLOWING
+                          Column(
+
+                            children: [
+
+                              Text(
+
+                                "${(userData['following'] ?? []).length}",
+
+                                style:
+                                const TextStyle(
+
+                                  color:
+                                  Colors.white,
+
+                                  fontSize: 20,
+
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                  height: 5),
+
+                              const Text(
+
+                                "Following",
+
+                                style:
+                                TextStyle(
+                                  color:
+                                  Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// USERNAME
+                      Text(
+
+                        userData['username']
+                            ?? '',
+
+                        style:
+                        const TextStyle(
+
+                          color: Colors.white,
+
+                          fontSize: 16,
+
+                          fontWeight:
+                          FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      /// BIO
+                      Text(
+
+                        userData['bio']
+                            ?? '',
+
+                        style:
+                        const TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// EDIT PROFILE
+                      SizedBox(
+
+                        width:
+                        double.infinity,
+
+                        child:
+                        OutlinedButton(
+
+                          style:
+                          OutlinedButton
+                              .styleFrom(
+
+                            side: BorderSide(
+                              color:
+                              Colors.grey
+                                  .shade700,
+                            ),
+                          ),
+
+                          onPressed: () {},
+
+                          child: const Text(
+
+                            "Edit Profile",
+
+                            style: TextStyle(
+                              color:
+                              Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Divider(
+                        color:
+                        Colors.grey
+                            .shade800,
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      /// POSTS GRID
+                      GridView.builder(
+
+                        shrinkWrap: true,
+
+                        physics:
+                        const NeverScrollableScrollPhysics(),
+
+                        itemCount:
+                        posts.length,
+
+                        gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+
+                          crossAxisCount: 3,
+
+                          crossAxisSpacing:
+                          5,
+
+                          mainAxisSpacing:
+                          5,
+                        ),
+
+                        itemBuilder:
+                            (context, index) {
+
+                          var post =
+                          posts[index];
+
+                          return GestureDetector(
+
+                            onTap: () {
+
+                              Navigator.push(
+
+                                context,
+
+                                MaterialPageRoute(
+
+                                  builder: (_) =>
+
+                                      ProfilePostsScreen(
+
+                                        posts: posts,
+
+                                        initialIndex: index,
+                                      ),
+                                ),
+                              );
+                            },
+
+                            child: ClipRRect(
+
+                              borderRadius:
+                              BorderRadius.circular(
+                                2,
+                              ),
+
+                              child: Image.network(
+
+                                post['postImage'],
+
+                                fit: BoxFit.cover,
+
+                                loadingBuilder:
+
+                                    (
+
+                                    context,
+
+                                    child,
+
+                                    progress,
+
+                                    ) {
+
+                                  if (progress == null) {
+
+                                    return child;
+                                  }
+
+                                  return Container(
+
+                                    color:
+                                    Colors.grey
+                                        .shade900,
+
+                                    child: const Center(
+
+                                      child:
+                                      CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
+
+                                errorBuilder:
+
+                                    (
+
+                                    context,
+
+                                    error,
+
+                                    stackTrace,
+
+                                    ) {
+
+                                  return Container(
+
+                                    color:
+                                    Colors.grey
+                                        .shade900,
+
+                                    child:
+                                    const Icon(
+
+                                      Icons.image,
+
+                                      color:
+                                      Colors.white54,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                          },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
