@@ -2,7 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/reel_player.dart';
+import '../comments/comments_screen.dart';
 import 'upload_reel_screen.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../services/reel_service.dart';
 
 class ReelsScreen extends StatelessWidget {
 
@@ -203,67 +209,181 @@ class ReelsScreen extends StatelessWidget {
                   ),
 
                   /// RIGHT SIDE ACTIONS
-                  Positioned(
+              Positioned(
 
-                    right: 10,
-                    bottom: 80,
+              right: 10,
 
-                    child: Column(
+              bottom: 80,
 
-                      children: [
+              child: Column(
 
-                        /// LIKE
-                        IconButton(
+              children: [
 
-                          onPressed: () {},
+              /// LIKE
+              Column(
 
-                          icon: const Icon(
+              children: [
 
-                            Icons.favorite_border,
+              IconButton(
 
-                            color: Colors.white,
+              onPressed: () {
 
-                            size: 32,
-                          ),
-                        ),
+              ReelService().likeReel(
 
-                        const SizedBox(height: 15),
+              reelId:
+              data['reelId'],
 
-                        /// COMMENT
-                        IconButton(
+              userId:
+              FirebaseAuth
+                  .instance
+                  .currentUser!
+                  .uid,
 
-                          onPressed: () {},
+              likes:
+              data['likes']
+              ?? [],
+              );
+              },
 
-                          icon: const Icon(
+              icon: Icon(
 
-                            Icons.comment,
+              (data['likes'] ?? [])
 
-                            color: Colors.white,
+                  .contains(
 
-                            size: 30,
-                          ),
-                        ),
+              FirebaseAuth
+                  .instance
+                  .currentUser!
+                  .uid,
+              )
 
-                        const SizedBox(height: 15),
+              ? Icons.favorite
 
-                        /// SHARE
-                        IconButton(
+                  : Icons.favorite_border,
 
-                          onPressed: () {},
+              color:
 
-                          icon: const Icon(
+              (data['likes'] ?? [])
 
-                            Icons.send,
+                  .contains(
 
-                            color: Colors.white,
+              FirebaseAuth
+                  .instance
+                  .currentUser!
+                  .uid,
+              )
 
-                            size: 28,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              ? Colors.red
+
+                  : Colors.white,
+
+              size: 32,
+              ),
+              ),
+
+              Text(
+
+              "${(data['likes'] ?? []).length}",
+
+              style:
+              const TextStyle(
+
+              color:
+              Colors.white,
+              ),
+              ),
+              ],
+              ),
+
+              const SizedBox(
+              height: 20,
+              ),
+
+              /// COMMENT
+              Column(
+
+              children: [
+
+              IconButton(
+
+              onPressed: () {
+
+              Navigator.push(
+
+              context,
+
+              MaterialPageRoute(
+
+              builder:
+              (context) =>
+
+                  CommentsScreen(
+
+                    postId:
+                    data['reelId'],
+
+                    isReel:true,
+                  )              ),
+              );
+              },
+
+              icon:
+              const Icon(
+
+              Icons.comment,
+
+              color:
+              Colors.white,
+
+              size: 30,
+              ),
+              ),
+
+              Text(
+
+              "${data['commentCount'] ?? 0}",
+
+              style:
+              const TextStyle(
+
+              color:
+              Colors.white,
+              ),
+              ),
+              ],
+              ),
+
+              const SizedBox(
+              height: 20,
+              ),
+
+              /// SHARE
+              IconButton(
+
+              onPressed: () {
+
+              Share.share(
+
+              data[
+              'videoUrl'],
+              );
+              },
+
+              icon:
+              const Icon(
+
+              Icons.send,
+
+              color:
+              Colors.white,
+
+              size: 28,
+              ),
+              ),
+              ],
+              ),
+              ),
+              ],
               );
             },
           );

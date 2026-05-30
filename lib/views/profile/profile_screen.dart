@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../services/profile_service.dart';
 import '../auth/login_screen.dart';
+import '../saved/saved_screen.dart';
 import 'profile_posts_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
 
@@ -123,65 +125,188 @@ class _ProfileScreenState
   /// MENU OPTIONS
   void showProfileOptions() {
 
-    showModalBottomSheet(
+    showGeneralDialog(
 
       context: context,
 
-      backgroundColor:
-      Colors.grey.shade900,
+      barrierDismissible: true,
 
-      builder: (context) {
+      barrierLabel: "Menu",
 
-        return SafeArea(
+      transitionDuration:
+      const Duration(
+        milliseconds: 300,
+      ),
 
-          child: Wrap(
-            children: [
+      pageBuilder:
+          (
+          context,
+          animation,
+          secondaryAnimation,
+          ) {
 
-              /// LOGOUT
-              ListTile(
+        return Align(
 
-                leading: const Icon(
-                  Icons.logout,
-                  color: Colors.red,
-                ),
+          alignment:
+          Alignment.centerRight,
 
-                title: const Text(
+          child: Material(
 
-                  "Logout",
+            color:
+            Colors.grey.shade900,
 
-                  style: TextStyle(
-                    color: Colors.red,
-                  ),
-                ),
+            child: Container(
 
-                onTap: () async {
+              width:
+              MediaQuery.of(
+                context,
+              ).size.width *
+                  0.7,
 
-                  Navigator.pop(context);
+              padding:
+              const EdgeInsets.only(
+                top: 60,
+              ),
 
-                  await FirebaseAuth.instance
-                      .signOut();
+              child: Column(
 
-                  Navigator.pushAndRemoveUntil(
+                children: [
 
-                    context,
+                  ListTile(
 
-                    MaterialPageRoute(
+                    leading:
+                    const Icon(
 
-                      builder: (context) =>
+                      Icons.bookmark,
 
-                      const LoginScreen(),
+                      color:
+                      Colors.white,
                     ),
 
-                        (route) => false,
-                  );
-                },
+                    title:
+                    const Text(
+
+                      "Saved",
+
+                      style:
+                      TextStyle(
+                        color:
+                        Colors.white,
+                      ),
+                    ),
+
+                    onTap: () {
+
+                      Navigator.pop(
+                        context,
+                      );
+
+                      Navigator.push(
+
+                        context,
+
+                        MaterialPageRoute(
+
+                          builder:
+                              (_) =>
+
+                          const SavedScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  ListTile(
+
+                    leading:
+                    const Icon(
+
+                      Icons.logout,
+
+                      color:
+                      Colors.red,
+                    ),
+
+                    title:
+                    const Text(
+
+                      "Logout",
+
+                      style:
+                      TextStyle(
+                        color:
+                        Colors.red,
+                      ),
+                    ),
+
+                    onTap:
+                        () async {
+
+                      await FirebaseAuth
+                          .instance
+                          .signOut();
+
+                      Navigator
+                          .pushAndRemoveUntil(
+
+                        context,
+
+                        MaterialPageRoute(
+
+                          builder:
+                              (
+
+                              context,
+
+                              ) =>
+
+                          const LoginScreen(),
+                        ),
+
+                            (route) =>
+                        false,
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
+        );
+      },
+
+      transitionBuilder:
+
+          (
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+          ) {
+
+        return SlideTransition(
+
+          position:
+          Tween<Offset>(
+
+            begin:
+            const Offset(
+              1,
+              0,
+            ),
+
+            end:
+            Offset.zero,
+          ).animate(
+            animation,
+          ),
+
+          child: child,
         );
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -538,8 +663,23 @@ class _ProfileScreenState
                             ),
                           ),
 
-                          onPressed: () {},
+                          onPressed: () {
 
+                            Navigator.push(
+
+                              context,
+
+                              MaterialPageRoute(
+
+                                builder: (context) =>
+
+                                    EditProfileScreen(
+
+                                      userData: userData,
+                                    ),
+                              ),
+                            );
+                          },
                           child: const Text(
 
                             "Edit Profile",

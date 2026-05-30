@@ -9,13 +9,18 @@ class CommentService {
     required String postId,
 
     required String comment,
+
+    bool isReel = false,
+
   }) async {
 
     try {
 
-      if (comment.trim().isEmpty) {
-        return;
-      }
+      if (
+      comment
+          .trim()
+          .isEmpty
+      ) return;
 
       String commentId =
 
@@ -25,44 +30,80 @@ class CommentService {
 
       User? currentUser =
 
-          FirebaseAuth.instance
+          FirebaseAuth
+              .instance
               .currentUser;
 
-      if (currentUser == null) {
-        return;
-      }
+      if (
+      currentUser ==
+          null
+      ) return;
+
+      String collection =
+
+      isReel
+
+          ? "reels"
+
+          : "posts";
 
       /// SAVE COMMENT
-      await FirebaseFirestore.instance
-          .collection("posts")
-          .doc(postId)
-          .collection("comments")
-          .doc(commentId)
+      await FirebaseFirestore
+          .instance
+          .collection(
+        collection,
+      )
+          .doc(
+        postId,
+      )
+          .collection(
+        "comments",
+      )
+          .doc(
+        commentId,
+      )
           .set({
 
-        "commentId": commentId,
+        "commentId":
+        commentId,
 
-        "uid": currentUser.uid,
+        "uid":
+        currentUser.uid,
 
-        "username": "renu",
+        "username":
+        "renu",
 
-        "comment": comment.trim(),
+        "comment":
+        comment.trim(),
 
         "timestamp":
-        FieldValue.serverTimestamp(),
+
+        FieldValue
+            .serverTimestamp(),
       });
 
-      /// UPDATE COMMENT COUNT
-      await FirebaseFirestore.instance
-          .collection("posts")
-          .doc(postId)
+      /// UPDATE COUNT
+      await FirebaseFirestore
+          .instance
+          .collection(
+        collection,
+      )
+          .doc(
+        postId,
+      )
           .update({
 
         "commentCount":
-        FieldValue.increment(1),
+
+        FieldValue
+            .increment(
+          1,
+        ),
       });
 
-    } catch (e) {
+    }
+
+    catch (e) {
 
       print(
         "COMMENT ERROR: $e",
@@ -71,37 +112,67 @@ class CommentService {
   }
 
   /// DELETE COMMENT
-  Future<void> deleteComment({
+  Future<void>
+  deleteComment({
 
     required String postId,
 
     required String commentId,
+
+    bool isReel = false,
+
   }) async {
 
     try {
 
-      /// DELETE COMMENT
-      await FirebaseFirestore.instance
-          .collection("posts")
-          .doc(postId)
-          .collection("comments")
-          .doc(commentId)
+      String collection =
+
+      isReel
+
+          ? "reels"
+
+          : "posts";
+
+      await FirebaseFirestore
+          .instance
+          .collection(
+        collection,
+      )
+          .doc(
+        postId,
+      )
+          .collection(
+        "comments",
+      )
+          .doc(
+        commentId,
+      )
           .delete();
 
-      /// DECREASE COMMENT COUNT
-      await FirebaseFirestore.instance
-          .collection("posts")
-          .doc(postId)
+      await FirebaseFirestore
+          .instance
+          .collection(
+        collection,
+      )
+          .doc(
+        postId,
+      )
           .update({
 
         "commentCount":
-        FieldValue.increment(-1),
+
+        FieldValue
+            .increment(
+          -1,
+        ),
       });
 
-    } catch (e) {
+    }
+
+    catch (e) {
 
       print(
-        "DELETE COMMENT ERROR: $e",
+        "DELETE ERROR: $e",
       );
     }
   }

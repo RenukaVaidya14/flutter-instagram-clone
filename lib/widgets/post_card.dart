@@ -1,77 +1,60 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/post_service.dart';
 import '../views/comments/comments_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/save_service.dart';
 
-import 'package:dio/dio.dart';
-import 'package:share_plus/share_plus.dart';
-
-class PostCard extends StatelessWidget {
-
+class PostCard extends StatefulWidget {
   final Map<String, dynamic> post;
 
   const PostCard({
-
     super.key,
-
     required this.post,
   });
 
-  /// SHARE POST
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  final PostService postService = PostService();
+
   Future<void> sharePost(
-
       BuildContext context,
-
       String imageUrl,
-
       String caption,
-
       ) async {
-
     try {
-
       final dir =
-
       await getTemporaryDirectory();
 
       final filePath =
-
           "${dir.path}/shared_post.jpg";
 
       await Dio().download(
-
         imageUrl,
-
         filePath,
       );
 
       await Share.shareXFiles(
-
         [
-
           XFile(filePath),
         ],
-
         text: caption,
       );
-
     } catch (e) {
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
-
           content:
-          Text(
-            "Unable to share",
-          ),
+          Text("Unable to share"),
         ),
       );
     }
@@ -79,30 +62,23 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final currentUserId =
-
         FirebaseAuth.instance
             .currentUser!
             .uid;
 
-    final PostService postService =
-    PostService();
-
     bool isLiked =
-
-    (post['likes'] ?? [])
+    (widget.post['likes'] ?? [])
         .contains(
       currentUserId,
     );
 
     int commentCount =
-
-        post['commentCount'] ??
+        widget.post[
+        'commentCount'] ??
             0;
 
     return Column(
-
       crossAxisAlignment:
       CrossAxisAlignment.start,
 
@@ -110,43 +86,34 @@ class PostCard extends StatelessWidget {
 
         /// HEADER
         Padding(
-
           padding:
           const EdgeInsets.all(
-            12,
-          ),
+              12),
 
           child: Row(
-
             children: [
 
               const CircleAvatar(
-
                 backgroundColor:
                 Colors.grey,
 
                 child: Icon(
-
                   Icons.person,
-
                   color:
                   Colors.white,
                 ),
               ),
 
               const SizedBox(
-                width: 10,
-              ),
+                  width: 10),
 
               Text(
-
-                post['username']
-                    ??
+                widget.post[
+                'username'] ??
                     'User',
 
                 style:
                 const TextStyle(
-
                   color:
                   Colors.white,
 
@@ -157,124 +124,19 @@ class PostCard extends StatelessWidget {
 
               const Spacer(),
 
-              GestureDetector(
-
-                onTap: () {
-
-                  showModalBottomSheet(
-
-                    context: context,
-
-                    backgroundColor:
-                    Colors.black,
-
-                    builder: (_) {
-
-                      return SafeArea(
-
-                        child: Column(
-
-                          mainAxisSize:
-                          MainAxisSize.min,
-
-                          children: [
-
-                            ListTile(
-
-                              leading:
-                              const Icon(
-
-                                Icons.delete,
-
-                                color:
-                                Colors.red,
-                              ),
-
-                              title:
-                              const Text(
-
-                                "Delete Post",
-
-                                style:
-                                TextStyle(
-
-                                  color:
-                                  Colors.red,
-                                ),
-                              ),
-
-                              onTap: () async {
-
-                                Navigator.pop(
-                                  context,
-                                );
-
-                                try {
-
-                                  await FirebaseFirestore
-                                      .instance
-                                      .collection(
-                                      "posts")
-                                      .doc(
-                                    post[
-                                    'postId'],
-                                  )
-                                      .delete();
-
-                                  ScaffoldMessenger
-                                      .of(
-                                      context)
-                                      .showSnackBar(
-
-                                    const SnackBar(
-
-                                      content:
-                                      Text(
-                                        "Post deleted",
-                                      ),
-                                    ),
-                                  );
-
-                                } catch (e) {
-
-                                  ScaffoldMessenger
-                                      .of(
-                                      context)
-                                      .showSnackBar(
-
-                                    const SnackBar(
-
-                                      content:
-                                      Text(
-                                        "Delete failed",
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-
-                child: const Icon(
-
-                  Icons.more_vert,
-
-                  color:
-                  Colors.white,
-                ),
-              )            ],
+              const Icon(
+                Icons.more_vert,
+                color:
+                Colors.white,
+              ),
+            ],
           ),
         ),
 
         /// IMAGE
         Image.network(
-
-          post['postImage'],
+          widget.post[
+          'postImage'],
 
           width:
           double.infinity,
@@ -287,316 +149,285 @@ class PostCard extends StatelessWidget {
 
         /// ACTIONS
         Padding(
-
-          padding:
-          const EdgeInsets
-              .symmetric(
-
+          padding: const EdgeInsets.symmetric(
             horizontal: 10,
-
             vertical: 8,
           ),
 
-          child: Row(
+          child: StatefulBuilder(
 
-            children: [
+            builder: (
+                context,
+                setLocalState,
+                ) {
 
-              /// LIKE
-              IconButton(
+              bool isLiked =
+              (widget.post['likes'] ?? [])
+                  .contains(
+                currentUserId,
+              );
 
-                onPressed: () {
-
-                  postService
-                      .likePost(
-
-                    postId:
-                    post[
-                    'postId'],
-
-                    userId:
-                    currentUserId,
-
-                    likes:
-                    post[
-                    'likes'] ??
-                        [],
-                  );
-                },
-
-                icon: Icon(
-
-                  isLiked
-
-                      ? Icons
-                      .favorite
-
-                      : Icons
-                      .favorite_border,
-
-                  color:
-
-                  isLiked
-
-                      ? Colors
-                      .red
-
-                      : Colors
-                      .white,
-                ),
-              ),
-
-              /// COMMENT
-              Column(
+              return Row(
 
                 children: [
 
+                  /// LIKE
                   IconButton(
 
-                    onPressed: () {
+                    onPressed: () async {
 
-                      Navigator.push(
+                      try {
+
+                        List likes =
+                        List.from(
+                            widget.post[
+                            'likes'] ??
+                                []);
+
+                        if (
+                        likes.contains(
+                            currentUserId
+                        )
+                        ) {
+
+                          likes.remove(
+                              currentUserId);
+
+                        } else {
+
+                          likes.add(
+                              currentUserId);
+
+                        }
+
+                        setLocalState(() {
+
+                          widget.post[
+                          'likes'] =
+                              likes;
+
+                        });
+
+                        await postService
+                            .likePost(
+
+                          postId:
+                          widget.post[
+                          'postId'],
+
+                          userId:
+                          currentUserId,
+
+                          likes:
+                          likes,
+                        );
+
+                      } catch (e) {
+
+                        ScaffoldMessenger
+                            .of(context)
+                            .showSnackBar(
+
+                          SnackBar(
+                            content:
+                            Text(
+                                e.toString()),
+                          ),
+                        );
+                      }
+                    },
+
+                    icon: Icon(
+
+                      isLiked
+                          ? Icons.favorite
+                          : Icons
+                          .favorite_border,
+
+                      color:
+
+                      isLiked
+                          ? Colors.red
+                          : Colors.white,
+                    ),
+                  ),
+
+                  /// COMMENT
+                  Column(
+
+                    children: [
+
+                      IconButton(
+
+                        onPressed: () {
+
+                          print(
+                              widget.post);
+
+                          if (
+
+                          widget.post[
+                          'postId']
+
+                              ==
+
+                              null
+
+                          ) {
+
+                            ScaffoldMessenger
+                                .of(
+                                context)
+
+                                .showSnackBar(
+
+                              const SnackBar(
+
+                                content:
+                                Text(
+                                  "postId missing",
+                                ),
+                              ),
+                            );
+
+                            return;
+                          }
+
+                          Navigator.push(
+
+                            context,
+
+                            MaterialPageRoute(
+
+                              builder:
+                                  (
+
+                                  _,
+
+                                  ) =>
+
+                                  CommentsScreen(
+
+                                    postId:
+
+                                    widget.post[
+                                    'postId'],
+                                  ),
+                            ),
+                          );
+                        },
+
+                        icon:
+                        const Icon(
+
+                          Icons
+                              .comment_outlined,
+
+                          color:
+                          Colors.white,
+                        ),
+                      ),
+
+                      Text(
+
+                        "${widget.post['commentCount'] ?? 0}",
+
+                        style:
+                        const TextStyle(
+
+                          color:
+                          Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  /// SHARE
+                  IconButton(
+
+                    onPressed:
+                        () {
+
+                      sharePost(
 
                         context,
 
-                        MaterialPageRoute(
+                        widget.post[
+                        'postImage'],
 
-                          builder:
-                              (
-
-                              context,
-
-                              ) =>
-
-                              CommentsScreen(
-
-                                postId:
-
-                                post[
-                                'postId'],
-                              ),
-                        ),
+                        widget.post[
+                        'caption'] ??
+                            '',
                       );
                     },
 
                     icon:
                     const Icon(
 
-                      Icons
-                          .comment_outlined,
+                      Icons.send,
 
                       color:
-                      Colors
-                          .white,
+                      Colors.white,
                     ),
                   ),
 
-                  Text(
+                  const Spacer(),
 
-                    "$commentCount",
+                  FutureBuilder(
 
-                    style:
-                    const TextStyle(
-
-                      color:
-                      Colors
-                          .white,
+                    future: SaveService()
+                        .isPostSaved(
+                      widget.post['postId'],
                     ),
-                  ),
-                ],
-              ),
 
-              /// SHARE
-              IconButton(
+                    builder: (context, snapshot) {
 
-                onPressed: () {
+                      bool isSaved =
+                          (snapshot.data as bool?) ?? false;
 
-                  showModalBottomSheet(
+                      return IconButton(
 
-                    context:
-                    context,
+                        onPressed: () async {
 
-                    backgroundColor:
-                    Colors.black,
+                          await SaveService()
+                              .toggleSavePost(
 
-                    builder:
-                        (_) {
+                            postId:
+                            widget.post['postId'],
+                          );
 
-                      return SafeArea(
+                          setState(() {});
+                        },
 
-                        child:
+                        icon: Icon(
 
-                        Column(
+                          isSaved
 
-                          mainAxisSize:
-                          MainAxisSize
-                              .min,
+                              ? Icons.bookmark
 
-                          children: [
+                              : Icons.bookmark_border,
 
-                            const SizedBox(
-                              height:
-                              10,
-                            ),
-
-                            const Text(
-
-                              "Share Post",
-
-                              style:
-                              TextStyle(
-
-                                color:
-                                Colors.white,
-
-                                fontSize:
-                                18,
-                              ),
-                            ),
-
-                            ListTile(
-
-                              leading:
-                              const Icon(
-
-                                Icons.share,
-
-                                color:
-                                Colors.white,
-                              ),
-
-                              title:
-                              const Text(
-
-                                "Share",
-
-                                style:
-                                TextStyle(
-
-                                  color:
-                                  Colors.white,
-                                ),
-                              ),
-
-                              onTap:
-                                  () {
-
-                                Navigator.pop(
-                                  context,
-                                );
-
-                                sharePost(
-
-                                  context,
-
-                                  post[
-                                  'postImage'],
-
-                                  post[
-                                  'caption'] ??
-                                      '',
-                                );
-                              },
-                            ),
-
-                            ListTile(
-
-                              leading:
-                              const Icon(
-
-                                Icons.download,
-
-                                color:
-                                Colors.white,
-                              ),
-
-                              title:
-                              const Text(
-
-                                "Download",
-
-                                style:
-                                TextStyle(
-
-                                  color:
-                                  Colors.white,
-                                ),
-                              ),
-
-                              onTap:
-                                  () {
-
-                                Navigator.pop(
-                                  context,
-                                );
-
-                                sharePost(
-
-                                  context,
-
-                                  post[
-                                  'postImage'],
-
-                                  "",
-                                );
-                              },
-                            ),
-
-                            const SizedBox(
-                              height:
-                              20,
-                            ),
-                          ],
+                          color: Colors.white,
                         ),
                       );
                     },
-                  );
-                },
-
-                icon:
-                const Icon(
-
-                  Icons.send,
-
-                  color:
-                  Colors.white,
-                ),
-              ),
-
-              const Spacer(),
-
-              /// SAVE
-              IconButton(
-
-                onPressed: () {},
-
-                icon:
-                const Icon(
-
-                  Icons
-                      .bookmark_border,
-
-                  color:
-                  Colors
-                      .white,
-                ),
-              ),
-            ],
+                  )
+                ],
+              );
+            },
           ),
         ),
-
-        /// LIKES
+        /// LIKE COUNT
         Padding(
-
           padding:
           const EdgeInsets
               .symmetric(
-
             horizontal: 15,
           ),
 
           child: Text(
 
-            "${(post['likes'] ?? []).length} likes",
+            "${(widget.post['likes'] ?? []).length} likes",
 
             style:
             const TextStyle(
@@ -611,8 +442,7 @@ class PostCard extends StatelessWidget {
         ),
 
         const SizedBox(
-          height: 5,
-        ),
+            height: 5),
 
         /// CAPTION
         Padding(
@@ -620,11 +450,11 @@ class PostCard extends StatelessWidget {
           padding:
           const EdgeInsets
               .symmetric(
-
             horizontal: 15,
           ),
 
-          child: Text.rich(
+          child:
+          Text.rich(
 
             TextSpan(
 
@@ -633,7 +463,7 @@ class PostCard extends StatelessWidget {
                 TextSpan(
 
                   text:
-                  "${post['username']} ",
+                  "${widget.post['username']} ",
 
                   style:
                   const TextStyle(
@@ -649,13 +479,12 @@ class PostCard extends StatelessWidget {
                 TextSpan(
 
                   text:
-                  post[
+                  widget.post[
                   'caption'] ??
                       '',
 
                   style:
                   const TextStyle(
-
                     color:
                     Colors.white,
                   ),
@@ -666,8 +495,7 @@ class PostCard extends StatelessWidget {
         ),
 
         const SizedBox(
-          height: 20,
-        ),
+            height: 20),
       ],
     );
   }

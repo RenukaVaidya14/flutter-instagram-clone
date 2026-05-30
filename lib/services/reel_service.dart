@@ -13,82 +13,226 @@ class ReelService {
     required File videoFile,
 
     required String caption,
+
   }) async {
 
     try {
 
-      /// UNIQUE ID
       String reelId =
 
       DateTime.now()
           .millisecondsSinceEpoch
           .toString();
 
-      /// CLOUDINARY URL
       var url = Uri.parse(
 
         "https://api.cloudinary.com/v1_1/damza1cx4/video/upload",
       );
 
-      /// REQUEST
       var request =
       http.MultipartRequest(
+
         "POST",
+
         url,
       );
 
-      /// VIDEO FILE
       request.files.add(
 
         await http.MultipartFile
             .fromPath(
+
           "file",
+
           videoFile.path,
         ),
       );
 
-      /// PRESET
       request.fields[
-      'upload_preset'] =
+      'upload_preset'
+      ] =
+
       'instagram_clone';
 
-      /// SEND
       var response =
       await request.send();
 
-      /// RESPONSE
       var responseData =
+
       await response.stream
           .bytesToString();
 
       var data =
-      jsonDecode(responseData);
+
+      jsonDecode(
+        responseData,
+      );
 
       String videoUrl =
-      data['secure_url'];
 
-      /// SAVE FIRESTORE
-      await FirebaseFirestore.instance
-          .collection("reels")
-          .doc(reelId)
+      data[
+      'secure_url'
+      ];
+
+      /// SAVE REEL
+      await FirebaseFirestore
+          .instance
+          .collection(
+        "reels",
+      )
+          .doc(
+        reelId,
+      )
           .set({
 
-        "reelId": reelId,
+        "reelId":
+        reelId,
 
-        "videoUrl": videoUrl,
+        "videoUrl":
+        videoUrl,
 
-        "caption": caption,
+        "caption":
+        caption,
 
-        "username": "renu",
+        "username":
+        "renu",
+
+        "likes":
+        [],
+
+        "commentCount":
+        0,
 
         "timestamp":
-        FieldValue.serverTimestamp(),
+        FieldValue
+            .serverTimestamp(),
       });
 
-    } catch (e) {
+    }
+
+    catch (e) {
 
       print(
-        "REEL ERROR: $e",
+
+        "UPLOAD ERROR: $e",
+      );
+    }
+  }
+
+  /// LIKE REEL
+  Future<void> likeReel({
+
+    required String reelId,
+
+    required String userId,
+
+    required List likes,
+
+  }) async {
+
+    try {
+
+      if (
+
+      likes.contains(
+        userId,
+      )
+
+      ) {
+
+        await FirebaseFirestore
+            .instance
+            .collection(
+          "reels",
+        )
+            .doc(
+          reelId,
+        )
+            .update({
+
+          "likes":
+
+          FieldValue
+              .arrayRemove(
+
+            [
+              userId,
+            ],
+          ),
+        });
+
+      }
+
+      else {
+
+        await FirebaseFirestore
+            .instance
+            .collection(
+          "reels",
+        )
+            .doc(
+          reelId,
+        )
+            .update({
+
+          "likes":
+
+          FieldValue
+              .arrayUnion(
+
+            [
+              userId,
+            ],
+          ),
+        });
+      }
+
+    }
+
+    catch (e) {
+
+      print(
+
+        "LIKE ERROR: $e",
+      );
+    }
+  }
+
+  /// UPDATE COMMENT COUNT
+  Future<void>
+  updateCommentCount({
+
+    required String reelId,
+
+  }) async {
+
+    try {
+
+      await FirebaseFirestore
+          .instance
+          .collection(
+        "reels",
+      )
+          .doc(
+        reelId,
+      )
+          .update({
+
+        "commentCount":
+
+        FieldValue
+            .increment(
+          1,
+        ),
+      });
+
+    }
+
+    catch (e) {
+
+      print(
+
+        "COMMENT ERROR: $e",
       );
     }
   }

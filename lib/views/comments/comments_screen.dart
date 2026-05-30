@@ -4,15 +4,20 @@ import 'package:flutter/material.dart';
 import '../../services/comment_service.dart';
 import '../../widgets/comment_tile.dart';
 
-class CommentsScreen extends StatefulWidget {
+class CommentsScreen
+    extends StatefulWidget {
 
   final String postId;
+
+  final bool isReel;
 
   const CommentsScreen({
 
     super.key,
 
     required this.postId,
+
+    this.isReel = false,
   });
 
   @override
@@ -26,25 +31,47 @@ class _CommentsScreenState
   final commentController =
   TextEditingController();
 
-  final CommentService commentService =
+  final CommentService
+  commentService =
   CommentService();
 
   @override
-  Widget build(BuildContext context) {
+  void dispose() {
+
+    commentController.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(
+      BuildContext context) {
+
+    String collection =
+
+    widget.isReel
+
+        ? "reels"
+
+        : "posts";
 
     return Scaffold(
 
-      backgroundColor: Colors.black,
+      backgroundColor:
+      Colors.black,
 
       appBar: AppBar(
 
-        backgroundColor: Colors.black,
+        backgroundColor:
+        Colors.black,
 
         title: const Text(
+
           "Comments",
 
           style: TextStyle(
-            color: Colors.white,
+            color:
+            Colors.white,
           ),
         ),
       ),
@@ -53,24 +80,43 @@ class _CommentsScreenState
 
         children: [
 
-          /// COMMENTS LIST
+          /// COMMENTS
           Expanded(
 
-            child: StreamBuilder(
+            child:
+            StreamBuilder(
 
-              stream: FirebaseFirestore.instance
-                  .collection("posts")
-                  .doc(widget.postId)
-                  .collection("comments")
+              stream:
+              FirebaseFirestore
+                  .instance
+                  .collection(
+                  collection)
+                  .doc(
+                widget
+                    .postId,
+              )
+                  .collection(
+                  "comments")
                   .orderBy(
+
                 "timestamp",
-                descending: true,
+
+                descending:
+                true,
               )
                   .snapshots(),
 
-              builder: (context, snapshot) {
+              builder:
 
-                if (!snapshot.hasData) {
+                  (
+                  context,
+
+                  snapshot,
+
+                  ) {
+
+                if (!snapshot
+                    .hasData) {
 
                   return const Center(
 
@@ -79,36 +125,95 @@ class _CommentsScreenState
                   );
                 }
 
-                return ListView.builder(
+                if (snapshot
+                    .data!
+                    .docs
+                    .isEmpty) {
+
+                  return const Center(
+
+                    child:
+                    Text(
+
+                      "No comments",
+
+                      style:
+                      TextStyle(
+
+                        color:
+                        Colors.white,
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView
+                    .builder(
+
+                  reverse:
+                  true,
 
                   itemCount:
-                  snapshot.data!.docs.length,
 
-                  itemBuilder: (context, index) {
+                  snapshot
+                      .data!
+                      .docs
+                      .length,
 
-                    var comment =
-                    snapshot.data!.docs[index];
+                  itemBuilder:
 
-                    Map<String, dynamic> data =
+                      (
 
-                    comment.data();
+                      context,
+
+                      index,
+
+                      ) {
+
+                    Map<
+                        String,
+
+                        dynamic>
+
+                    data =
+
+                    snapshot
+                        .data!
+                        .docs[
+                    index]
+                        .data()
+
+                    as Map<
+                        String,
+
+                        dynamic>;
 
                     return CommentTile(
 
-                      comment: data,
+                      comment:
+                      data,
 
                       postId:
-                      widget.postId,
-                    );                  },
+                      widget
+                          .postId,
+                    );
+                  },
                 );
               },
             ),
           ),
 
-          /// COMMENT INPUT
-          Padding(
+          /// INPUT
+          Container(
+
             padding:
-            const EdgeInsets.all(10),
+            const EdgeInsets
+                .all(
+              12,
+            ),
+
+            color:
+            Colors.black,
 
             child: Row(
 
@@ -116,66 +221,96 @@ class _CommentsScreenState
 
                 Expanded(
 
-                  child: TextField(
+                  child:
+                  TextField(
 
                     controller:
                     commentController,
 
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style:
+                    const TextStyle(
+
+                      color:
+                      Colors.white,
                     ),
 
-                    decoration: InputDecoration(
+                    decoration:
+                    InputDecoration(
 
                       hintText:
-                      "Add a comment...",
+                      "Add comment",
 
                       hintStyle:
                       const TextStyle(
-                        color: Colors.grey,
+
+                        color:
+                        Colors.grey,
                       ),
 
-                      filled: true,
+                      filled:
+                      true,
 
                       fillColor:
-                      Colors.grey.shade900,
+                      Colors.grey
+                          .shade900,
 
                       border:
                       OutlineInputBorder(
 
                         borderRadius:
-                        BorderRadius.circular(
-                            10),
+                        BorderRadius
+                            .circular(
+                          10,
+                        ),
 
                         borderSide:
-                        BorderSide.none,
+                        BorderSide
+                            .none,
                       ),
                     ),
                   ),
                 ),
 
-                /// SEND BUTTON
                 IconButton(
 
-                  onPressed: () async {
+                  onPressed:
+                      () async {
+
+                    if (commentController
+                        .text
+                        .trim()
+                        .isEmpty) {
+
+                      return;
+                    }
 
                     await commentService
                         .addComment(
 
                       postId:
-                      widget.postId,
+                      widget
+                          .postId,
 
                       comment:
-                      commentController.text
-                          .trim(),
+                      commentController
+                          .text,
+
+                      isReel:
+                      widget
+                          .isReel,
                     );
 
-                    commentController.clear();
+                    commentController
+                        .clear();
                   },
 
-                  icon: const Icon(
+                  icon:
+                  const Icon(
+
                     Icons.send,
-                    color: Colors.blue,
+
+                    color:
+                    Colors.blue,
                   ),
                 ),
               ],
